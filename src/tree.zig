@@ -124,7 +124,7 @@ pub const Leaf = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: Allocator, parent: ?*Tree, key: []const u8, value: []const u8) !*Self {
+    pub fn init(allocator: Allocator, parent: ?*Node, key: []const u8, value: []const u8) !*Self {
         const key_copy = try allocator.dupe(u8, key);
         std.log.debug("Allocated {} bytes for leaf key '{s}'", .{ key_copy.len, key });
         errdefer allocator.free(key_copy);
@@ -137,9 +137,23 @@ pub const Leaf = struct {
         std.log.debug("Allocated {} bytes for new leaf", .{@sizeOf(Leaf)});
         errdefer allocator.destroy(newLeaf);
 
+        var last: ?*Leaf = null;
+        if (parent) |p| {
+            last = findLastLinear(p);
+            if (!last) {
+                p.east = newLeaf;
+            } else {
+                last.?.east = newLeaf;
+            }
+        }
+
         newLeaf.* = .{
             .tag = .{ .node = false, .root = false, .leaf = true },
-            .west = parent,
+            .west = if (last) {
+                @as(?*Tree, last.?);
+            } else {
+                @as(?*Tree, parent.?);
+            },
             .east = null,
             .key = key_copy,
             .value = value_copy,
@@ -160,6 +174,19 @@ pub const Leaf = struct {
         allocator.free(self.value);
         std.log.debug("Freeing {} bytes from leaf", .{@sizeOf(Leaf)});
         allocator.destroy(self);
+    }
+
+    fn findLastLinear(parent: *Node) ?*Self {
+        if (!parent.east) {
+            return null;
+        }
+
+        var l = parent.east;
+        while (l.east) |next| {
+            l = next;
+        }
+
+        return l;
     }
 
     pub fn format(
@@ -259,6 +286,7 @@ pub const Tree = union(TreeTypes) {
             },
         }
 
+        std.log.debug("Freeing {} bytes from tree", .{@sizeOf(Tree)});
         allocator.destroy(self);
     }
 
