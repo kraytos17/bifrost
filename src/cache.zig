@@ -50,6 +50,12 @@ pub fn serverLoop(port: u16) !void {
             defer parsed_cmd.deinit(allocator);
 
             prettyPrintCommand(parsed_cmd);
+
+            if (CmdHandle.getHandler(&Handlers, parsed_cmd.command)) |handler| {
+                _ = handler(parsed_cmd.folder, parsed_cmd.args);
+            } else {
+                std.log.err("Unknown command: {s}. No handlers currently registered for the command\n", .{parsed_cmd.command});
+            }
         }
     }
 }
@@ -144,20 +150,23 @@ pub const CmdHandle = struct {
                 }
             }
         }
+
         return null;
     }
 };
 
-const Handlers = [_]CmdHandle{ .{ .cmd = .get, .handler = handleGet }, .{ .cmd = .create, .handler = handleCreate } };
+pub const Handlers = [_]CmdHandle{ .{ .cmd = .get, .handler = handleGet }, .{ .cmd = .create, .handler = handleCreate } };
 
 fn handleGet(folder: []const u8, args: []const u8) i32 {
     _ = folder;
     _ = args;
+    std.debug.print("Hello handler\n", .{});
     return 0;
 }
 
 fn handleCreate(folder: []const u8, args: []const u8) i32 {
     _ = folder;
     _ = args;
+    std.debug.print("Create handler\n", .{});
     return 0;
 }

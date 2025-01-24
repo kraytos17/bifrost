@@ -140,7 +140,7 @@ pub const Leaf = struct {
         var last: ?*Leaf = null;
         if (parent) |p| {
             last = findLastLinear(p);
-            if (!last) {
+            if (last == null) {
                 p.east = newLeaf;
             } else {
                 last.?.east = newLeaf;
@@ -149,11 +149,7 @@ pub const Leaf = struct {
 
         newLeaf.* = .{
             .tag = .{ .node = false, .root = false, .leaf = true },
-            .west = if (last) {
-                @as(?*Tree, last.?);
-            } else {
-                @as(?*Tree, parent.?);
-            },
+            .west = if (last) |l| @ptrCast(l) else @ptrCast(parent),
             .east = null,
             .key = key_copy,
             .value = value_copy,
@@ -177,11 +173,11 @@ pub const Leaf = struct {
     }
 
     fn findLastLinear(parent: *Node) ?*Self {
-        if (!parent.east) {
+        if (parent.east == null) {
             return null;
         }
 
-        var l = parent.east;
+        var l = parent.east.?;
         while (l.east) |next| {
             l = next;
         }
