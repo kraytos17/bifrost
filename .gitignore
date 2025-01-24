@@ -1,2 +1,5 @@
 .zig-cache/
 zig-out/
+
+vgcore.*
+valgrind_out.txt

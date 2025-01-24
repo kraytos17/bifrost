@@ -9,12 +9,12 @@ const Leaf = tree.Leaf;
 const Tag = tree.Tag;
 
 pub fn main() !void {
-    // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    // const allocator = gpa.allocator();
-    // defer {
-    //     const leaked = gpa.deinit();
-    //     if (leaked == .leak) std.log.err("Warning: Memory leak detected!\n", .{});
-    // }
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
+    defer {
+        const leaked = gpa.deinit();
+        if (leaked == .leak) std.log.err("Error: Memory leak detected!\n", .{});
+    }
 
     // var root = try Tree.init(allocator);
     // defer root.deinit(allocator);
@@ -27,11 +27,13 @@ pub fn main() !void {
     // std.log.info("Node1: {any}\n", .{node1});
     // std.log.info("Node2: {any}\n", .{node2});
 
-    const args = std.os.argv;
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
+
     var default_port: u16 = 8080;
 
     if (args.len > 1) {
-        const input_port = std.fmt.parseInt(u16, std.mem.span(args[1]), 10) catch |err| {
+        const input_port = std.fmt.parseInt(u16, args[1], 10) catch |err| {
             std.log.err("Invalid port number '{s}', falling back to default port {d}\n", .{ args[1], default_port });
             return err;
         };

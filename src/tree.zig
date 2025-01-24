@@ -6,7 +6,7 @@ pub const TreeError = error{
     NodeNotFound,
     OutOfMemory,
     InvalidCast,
-};
+} || Allocator.Error;
 
 pub const Node = struct {
     tag: Tag,
@@ -17,7 +17,7 @@ pub const Node = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: Allocator, parent: ?*Node, path: []const u8) !*Self {
+    pub fn initAlloc(allocator: Allocator, parent: ?*Node, path: []const u8) TreeError!*Self {
         if (path.len == 0) return TreeError.InvalidPath;
 
         const path_copy = try allocator.dupe(u8, path);
@@ -124,7 +124,7 @@ pub const Leaf = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: Allocator, parent: ?*Node, key: []const u8, value: []const u8) !*Self {
+    pub fn initAlloc(allocator: Allocator, parent: ?*Node, key: []const u8, value: []const u8) TreeError!*Self {
         const key_copy = try allocator.dupe(u8, key);
         std.log.debug("Allocated {} bytes for leaf key '{s}'", .{ key_copy.len, key });
         errdefer allocator.free(key_copy);
@@ -243,7 +243,7 @@ pub const Tree = union(TreeTypes) {
 
     const Self = @This();
 
-    pub fn init(allocator: Allocator) !*Self {
+    pub fn initAlloc(allocator: Allocator) TreeError!*Self {
         const tree = try allocator.create(Tree);
         std.log.debug("Allocated {} bytes for new tree", .{@sizeOf(Tree)});
         errdefer allocator.destroy(tree);
