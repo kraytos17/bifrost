@@ -25,12 +25,19 @@ pub fn main() !void {
     const node1 = try Node.initAlloc(allocator, root_node, "/users");
     const node2 = try Node.initAlloc(allocator, node1, "/users/login");
 
-    _ = try Leaf.initAlloc(allocator, node2, "key1", "value1");
-    _ = try Leaf.initAlloc(allocator, node2, "key2", "value2");
+    const leaf1 = try Leaf.initAlloc(allocator, node2, "key1", "value1");
+    const leaf2 = try Leaf.initAlloc(allocator, node2, "key2", "value2");
+    const found_node = tree.nodeLookup(root_node, "/users/login");
+    const found_leaf = tree.leafLookup(root_node, "key1");
 
-    std.log.info("Tree root: {any}\n", .{root});
-    std.log.info("Node1: {any}\n", .{node1});
-    std.log.info("Node2: {any}\n", .{node2});
+    std.debug.print("Node found {s}\n", .{found_node.?});
+    std.debug.print("Leaf found {s}\n", .{found_leaf.?});
+
+    std.log.info("Tree root: {s}\n", .{root});
+    std.log.info("Node1: {s}\n", .{node1});
+    std.log.info("Node2: {s}\n", .{node2});
+    std.log.info("Leaf1: {s}\n", .{leaf1});
+    std.log.info("Leaf2: {s}\n", .{leaf2});
 
     // const args = try std.process.argsAlloc(allocator);
     // defer std.process.argsFree(allocator, args);

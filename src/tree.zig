@@ -21,11 +21,9 @@ pub const Node = struct {
         if (path.len == 0) return TreeError.InvalidPath;
 
         const path_copy = try allocator.dupe(u8, path);
-        std.log.debug("Allocated {} bytes for node path '{s}'", .{ path_copy.len, path });
         errdefer allocator.free(path_copy);
 
         const newNode = try allocator.create(Node);
-        std.log.debug("Allocated {} bytes for new node", .{@sizeOf(Node)});
         errdefer allocator.destroy(newNode);
 
         newNode.* = .{
@@ -55,11 +53,8 @@ pub const Node = struct {
             self.east = null;
         }
 
-        std.log.debug("Freeing {} bytes from node path '{s}'", .{ self.path.len, self.path });
         allocator.free(self.path);
-
         if (!self.tag.root) {
-            std.log.debug("Freeing {} bytes from node", .{@sizeOf(Node)});
             allocator.destroy(self);
         }
     }
@@ -72,45 +67,37 @@ pub const Node = struct {
     ) !void {
         _ = fmt;
         _ = options;
-
-        try writer.writeAll("\nNode {\n");
         const indent = "    ";
 
-        try writer.print("{s}tag: {{ root: {}, node: {}, leaf: {} }},\n", .{
+        try writer.print("\nNode {{\n{s}tag: {{ root: {}, node: {}, leaf: {} }},\n{s}path: '{s}',\n{s}north: ", .{
             indent,
             self.tag.root,
             self.tag.node,
             self.tag.leaf,
+            indent,
+            self.path,
+            indent,
         });
 
-        try writer.print("{s}path: '{s}',\n", .{ indent, self.path });
-        try writer.print("{s}north: ", .{indent});
-
         if (self.north) |n| {
-            try writer.print("0x{x:0>16}", .{@intFromPtr(n)});
+            try writer.print("0x{x:0>16},\n", .{@intFromPtr(n)});
         } else {
-            try writer.writeAll("null");
+            try writer.print("null,\n", .{});
         }
 
-        try writer.writeAll(",\n");
         try writer.print("{s}west:  ", .{indent});
-
         if (self.west) |w| {
-            try writer.print("0x{x:0>16}", .{@intFromPtr(w)});
+            try writer.print("0x{x:0>16},\n", .{@intFromPtr(w)});
         } else {
-            try writer.writeAll("null");
+            try writer.print("null,\n", .{});
         }
 
-        try writer.writeAll(",\n");
         try writer.print("{s}east:  ", .{indent});
-
         if (self.east) |e| {
-            try writer.print("0x{x:0>16}", .{@intFromPtr(e)});
+            try writer.print("0x{x:0>16}\n}}", .{@intFromPtr(e)});
         } else {
-            try writer.writeAll("null");
+            try writer.print("null\n}}", .{});
         }
-
-        try writer.writeAll("\n}");
     }
 };
 
@@ -126,15 +113,12 @@ pub const Leaf = struct {
 
     pub fn initAlloc(allocator: Allocator, parent: ?*Node, key: []const u8, value: []const u8) TreeError!*Self {
         const key_copy = try allocator.dupe(u8, key);
-        std.log.debug("Allocated {} bytes for leaf key '{s}'", .{ key_copy.len, key });
         errdefer allocator.free(key_copy);
 
         const value_copy = try allocator.dupe(u8, value);
-        std.log.debug("Allocated {} bytes for leaf value", .{value_copy.len});
         errdefer allocator.free(value_copy);
 
         const newLeaf = try allocator.create(Leaf);
-        std.log.debug("Allocated {} bytes for new leaf", .{@sizeOf(Leaf)});
         errdefer allocator.destroy(newLeaf);
 
         var last: ?*Leaf = null;
@@ -164,11 +148,8 @@ pub const Leaf = struct {
             e.deinit(allocator);
         }
 
-        std.log.debug("Freeing {} bytes from leaf key '{s}'", .{ self.key.len, self.key });
         allocator.free(self.key);
-        std.log.debug("Freeing {} bytes from leaf value", .{self.value.len});
         allocator.free(self.value);
-        std.log.debug("Freeing {} bytes from leaf", .{@sizeOf(Leaf)});
         allocator.destroy(self);
     }
 
@@ -193,38 +174,34 @@ pub const Leaf = struct {
     ) !void {
         _ = fmt;
         _ = options;
-
-        try writer.writeAll("\nLeaf {\n");
         const indent = "    ";
 
-        try writer.print("{s}tag: {{ root: {}, node: {}, leaf: {} }},\n", .{
+        try writer.print("\nLeaf {{\n{s}tag: {{ root: {}, node: {}, leaf: {} }},\n{s}key:   '{s}',\n{s}value: '{s}',\n{s}size:  {d},\n{s}west: ", .{
             indent,
             self.tag.root,
             self.tag.node,
             self.tag.leaf,
+            indent,
+            self.key,
+            indent,
+            self.value,
+            indent,
+            self.size,
+            indent,
         });
 
-        try writer.print("{s}key:   '{s}',\n", .{ indent, self.key });
-        try writer.print("{s}value: '{s}',\n", .{ indent, self.value });
-        try writer.print("{s}size:  {d},\n", .{ indent, self.size });
-        try writer.print("{s}west: ", .{indent});
-
         if (self.west) |w| {
-            try writer.print("0x{x:0>16}", .{@intFromPtr(w)});
+            try writer.print("0x{x:0>16},\n", .{@intFromPtr(w)});
         } else {
-            try writer.writeAll("null");
+            try writer.print("null,\n", .{});
         }
 
-        try writer.writeAll(",\n");
         try writer.print("{s}east: ", .{indent});
-
         if (self.east) |e| {
-            try writer.print("0x{x:0>16}", .{@intFromPtr(e)});
+            try writer.print("0x{x:0>16}\n}}", .{@intFromPtr(e)});
         } else {
-            try writer.writeAll("null");
+            try writer.print("null\n}}", .{});
         }
-
-        try writer.writeAll("\n}");
     }
 };
 
@@ -241,7 +218,6 @@ pub const Tree = union(TreeTypes) {
 
     pub fn initAlloc(allocator: Allocator) TreeError!*Self {
         const tree = try allocator.create(Tree);
-        std.log.debug("Allocated {} bytes for new tree", .{@sizeOf(Tree)});
         errdefer allocator.destroy(tree);
 
         const path_copy = try allocator.dupe(u8, "/");
@@ -282,7 +258,6 @@ pub const Tree = union(TreeTypes) {
             },
         }
 
-        std.log.debug("Freeing {} bytes from tree", .{@sizeOf(Tree)});
         allocator.destroy(self);
     }
 
@@ -292,19 +267,18 @@ pub const Tree = union(TreeTypes) {
         options: std.fmt.FormatOptions,
         writer: anytype,
     ) !void {
-        try writer.writeAll("\nTree {");
         switch (self) {
             .node => |*node| {
-                try writer.writeAll("\n    Node:");
+                try writer.print("\nTree {{\n    Node:", .{});
                 try node.format(fmt, options, writer);
             },
             .leaf => |*leaf| {
-                try writer.writeAll("\n    Leaf:");
+                try writer.print("\nTree {{\n    Leaf:", .{});
                 try leaf.format(fmt, options, writer);
             },
         }
 
-        try writer.writeAll("\n}");
+        try writer.print("\n}}", .{});
     }
 
     pub fn asNode(self: *Self) !*Node {
@@ -320,3 +294,33 @@ pub const Tag = packed struct {
     node: bool,
     leaf: bool,
 };
+
+pub fn nodeLookup(root: ?*Node, path: []const u8) ?*Node {
+    var current_node = root;
+    while (current_node) |node| {
+        if (std.mem.eql(u8, node.path, path)) {
+            return node;
+        }
+
+        current_node = node.west;
+    }
+
+    return null;
+}
+
+pub fn leafLookup(root: ?*Node, key: []const u8) ?*Leaf {
+    var current_node = root;
+    while (current_node) |node| {
+        var current_leaf = node.east;
+        while (current_leaf) |leaf| {
+            if (std.mem.eql(u8, leaf.key, key)) {
+                return leaf;
+            }
+
+            current_leaf = leaf.east;
+        }
+        current_node = node.west;
+    }
+
+    return null;
+}
